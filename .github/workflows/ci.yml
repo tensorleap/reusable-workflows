@@ -1,0 +1,160 @@
+name: CI
+
+on:
+  workflow_call:
+    inputs:
+      lint_cmd:
+        required: true
+        type: string
+      test_cmd:
+        required: true
+        type: string
+    secrets:
+      gcp_service_account:
+        required: true
+      npm_token:
+        required: false
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Generate build variables
+      id: vars
+      run: |
+        echo "::set-output name=tag::$GITHUB_REF_NAME-$(echo $GITHUB_SHA | cut -c 1-8)"
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Setup gcloud
+      uses: google-github-actions/setup-gcloud@v0.2.0
+      with:
+        service_account_key: ${{ secrets.gcp_service_account }}
+        project_id: tensorleap-admin-3
+    - name: Configure docker
+      run: |-
+        gcloud --quiet auth configure-docker
+    - name: Build docker image
+      uses: docker/build-push-action@v2
+      with:
+        tags: gcr.io/${{ github.repository }}:${{steps.vars.outputs.tag}}
+        build-args: |
+          NPM_TOKEN=${{ secrets.npm_token }}
+        labels: |
+          commit=${{ github.sha }}
+        outputs: type=docker,dest=/tmp/built-image.tar
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    - name: Upload image artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: built-image
+        path: /tmp/built-image.tar
+
+  push_to_gcr:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Generate build variables
+      id: vars
+      run: |
+        echo "::set-output name=tag::$GITHUB_REF_NAME-$(echo $GITHUB_SHA | cut -c 1-8)"
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Setup gcloud
+      uses: google-github-actions/setup-gcloud@v0.2.0
+      with:
+        service_account_key: ${{ secrets.gcp_service_account }}
+        project_id: tensorleap-admin-3
+    - name: Configure docker
+      run: |-
+        gcloud --quiet auth configure-docker
+    - name: Download artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: built-image
+        path: /tmp
+    - name: Load image
+      run: |
+        docker load --input /tmp/built-image.tar
+        docker image ls -a
+    - name: Push to GCR
+      env:
+        TAG: ${{ steps.vars.outputs.tag }}
+      run: |
+        docker push gcr.io/$GITHUB_REPOSITORY:$TAG
+
+  lint:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Generate build variables
+      id: vars
+      run: |
+        echo "::set-output name=tag::$GITHUB_REF_NAME-$(echo $GITHUB_SHA | cut -c 1-8)"
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Download artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: built-image
+        path: /tmp
+    - name: Load image
+      run: |
+        docker load --input /tmp/built-image.tar
+        docker image ls -a
+    - name: Run lint
+      env:
+        TAG: ${{ steps.vars.outputs.tag }}
+        CMD: ${{ inputs.lint_cmd }}
+      run: |
+        docker run -e CI=true gcr.io/$GITHUB_REPOSITORY:$TAG $CMD
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Generate build variables
+      id: vars
+      run: |
+        echo "::set-output name=tag::$GITHUB_REF_NAME-$(echo $GITHUB_SHA | cut -c 1-8)"
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
+    - name: Download artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: built-image
+        path: /tmp
+    - name: Load image
+      run: |
+        docker load --input /tmp/built-image.tar
+        docker image ls -a
+    - name: Run test
+      env:
+        TAG: ${{ steps.vars.outputs.tag }}
+        CMD: ${{ inputs.test_cmd }}
+      run: |
+        docker run -e CI=true gcr.io/$GITHUB_REPOSITORY:$TAG $CMD
+
+  mark-stable:
+    needs: [lint, test, push_to_gcr]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Generate build variables
+      id: vars
+      run: |
+        echo "::set-output name=tag::$GITHUB_REF_NAME-$(echo $GITHUB_SHA | cut -c 1-8)"
+    - name: Setup gcloud
+      uses: google-github-actions/setup-gcloud@v0.2.0
+      with:
+        service_account_key: ${{ secrets.gcp_service_account }}
+        project_id: tensorleap-admin-3
+    - name: Set stable tag
+      env:
+        TAG: ${{ steps.vars.outputs.tag }}
+      run: |
+        gcloud container images add-tag gcr.io/$GITHUB_REPOSITORY:$TAG gcr.io/$GITHUB_REPOSITORY:$TAG-stable gcr.io/$GITHUB_REPOSITORY:latest
