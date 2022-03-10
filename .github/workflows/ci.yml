@@ -9,6 +9,11 @@ on:
       test_cmd:
         required: true
         type: string
+      debug_enabled:
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        type: string
+        required: false
+        default: 'false'
     secrets:
       gcp_service_account:
         required: true
@@ -98,7 +103,14 @@ jobs:
           CMD: ${{ inputs.test_cmd }}
           AUTH_SECRET: ${{secrets.gcp_service_account}}
         run: |
-          docker run -v $GOOGLE_APPLICATION_CREDENTIALS:$GOOGLE_APPLICATION_CREDENTIALS -e GOOGLE_APPLICATION_CREDENTIALS -e CI=true -e AUTH_SECRET gcr.io/$GITHUB_REPOSITORY:$TAG $CMD
+          docker run -v $GOOGLE_APPLICATION_CREDENTIALS:$GOOGLE_APPLICATION_CREDENTIALS -e GOOGLE_APPLICATION_CREDENTIALS -e CI=true -e AUTH_SECRET gcr.io/$GITHUB_REPOSITORY:$TAG $CMD || true
+      - name: Setup tmate session
+        # https://github.com/marketplace/actions/debugging-with-tmate#continue-a-workflow
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled == 'true' }}
+        timeout-minutes: 30
+        with:
+          limit-access-to-actor: true
 
   mark-stable:
     needs: [lint, test]
