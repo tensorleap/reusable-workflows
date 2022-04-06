@@ -115,6 +115,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v3
         with:
+          retention-days: 1
           name: diff_output
           path: ${{ github.workspace }}/__image_snapshots__/__diff_output__/*
           if-no-files-found: error
