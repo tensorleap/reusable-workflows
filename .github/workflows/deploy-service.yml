@@ -1,0 +1,98 @@
+name: Deploy Service
+
+on:
+  workflow_call:
+    inputs:
+      env_name:
+        description: Environment to deploy to
+        type: string
+        required: true
+      unstable:
+        description: Deploy unstable tag
+        type: boolean
+        default: false
+        required: false
+      service_name:
+        description: Service name
+        required: true
+        type: string
+    secrets:
+      gcp_service_account:
+        required: true
+      slack_token:
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v0
+        with:
+          credentials_json: ${{ secrets.gcp_service_account }}
+      - name: Set up GCloud SDK
+        uses: google-github-actions/setup-gcloud@v0
+      - name: Generate deploy variables
+        id: vars
+        env:
+          UNSTABLE: ${{ inputs.unstable }}
+          ENV_NAME: ${{ inputs.env_name }}
+        run: |
+          echo "::set-output name=tag::$GITHUB_REF_NAME-$(echo $GITHUB_SHA | cut -c 1-8)$(test "$UNSTABLE" == true && echo '' || echo '-stable')"
+          terraform output -json -state=<(gsutil cp gs://tensorleap-infra-nonprod/clusters/$ENV_NAME.tfstate -) | jq -r 'map_values(.value) | to_entries | .[] | "::set-output name=\(.key)::\(.value)"'
+      - name: Get cluster credentials
+        env:
+          PROJECT_ID: ${{ steps.vars.outputs.project_id }}
+          ZONE: ${{ steps.vars.outputs.location }}
+        run: gcloud container clusters get-credentials --project=$PROJECT_ID --zone=$ZONE tensorleap
+      - name: Get deployed commit
+        id: deployed_commit
+        env:
+          SERVICE_NAME: ${{ inputs.service_name }}
+        run: |
+          DEPLPOYED_COMMIT=$(helm get values tensorleap-$SERVICE_NAME -o json | jq -r 'if .commit_sha == null then "" else .commit_sha end')
+          echo "::set-output name=deployed_commit::$DEPLPOYED_COMMIT"
+      - name: Get Pull Requests
+        uses: arikmaor/commits-range-action@v1
+        id: commit_data
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          base_revision: ${{ steps.deployed_commit.outputs.deployed_commit }}
+      - name: Send Slack notification (deploy started)
+        uses: tensorleap/reusable-workflows/actions/slack-notify-deploy@master
+        with:
+          commit_data: ${{ steps.commit_data.outputs.result }}
+          env: ${{ inputs.env_name }}
+          slack_token: ${{ secrets.slack_token }}
+          started: true
+          unstable: ${{ inputs.unstable }}
+      - name: Deploy helm chart
+        working-directory: ./helm-chart
+        env:
+          ENV_NAME: ${{ inputs.env_name }}
+          SERVICE_NAME: ${{ inputs.service_name }}
+          PROJECT_ID: ${{ steps.vars.outputs.project_id }}
+          IMAGE_TAG: ${{ steps.vars.outputs.tag }}
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm dependency build
+          helm upgrade --install --create-namespace tensorleap-$SERVICE_NAME . -n tensorleap \
+            --set-string commit_sha=$GITHUB_SHA,env_name=$ENV_NAME,project_id=$PROJECT_ID,image_tag=$IMAGE_TAG \
+            --wait
+      - name: Send Slack notification (deploy finished)
+        if: ${{ always() }}
+        uses: tensorleap/reusable-workflows/actions/slack-notify-deploymaster
+        with:
+          commit_data: ${{ steps.commit_data.outputs.result }}
+          env: ${{ inputs.env_name }}
+          slack_token: ${{ secrets.slack_token }}
+          unstable: ${{ inputs.unstable }}
