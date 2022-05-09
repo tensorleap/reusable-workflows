@@ -1,0 +1,118 @@
+name: Slack Notify Deployment
+description: Send slack notifications about deployments
+
+inputs:
+  slack_token:
+    required: true
+    description: Token for github requests.
+  env_name:
+    required: true
+    description: Environment to deploy to
+  commit_data:
+    required: false
+    description: Data from commits-range-action.
+  started:
+    required: false
+    description: Report started instead of job status.
+  unstable:
+    required: false
+    description: Report started instead of job status.
+
+runs:
+  using: "composite"
+  steps:
+    - name: Prepare Slack message
+      uses: actions/github-script@v6
+      id: prepare_payload
+      env:
+        COMMIT_DATA: ${{ inputs.commit_data }}
+        ENV_NAME: ${{ inputs.env_name }}
+        JOB_STATUS: ${{ job.status }}
+        STARTED: ${{ inputs.started }}
+        UNSTABLE: ${{ inputs.unstable }}
+      with:
+        script: |
+          const data = JSON.parse(process.env.COMMIT_DATA)
+          const jobStatus = process.env.STARTED === 'true' ? 'started' : process.env.JOB_STATUS;
+          const statusIcon = jobStatus === 'started' ? ':hourglass_flowing_sand:' :
+            jobStatus === 'success' ? ':white_check_mark:' : ':x:';
+
+          const slackPayload = {
+            text: `Deployment started by ${context.actor} of ${context.repo.repo} to ${process.env.ENV_NAME}`,
+            blocks: [
+              {
+                type: "section",
+                fields: [
+                  {
+                    type: "mrkdwn",
+                    text: `Deployment started!${process.env.UNSTABLE === 'true' ? ' (:warning: unstable image is used!)' : ''}`
+                  },
+                  {
+                    type: "mrkdwn",
+                    text: `*Status:* ${jobStatus} ${statusIcon}`
+                  },
+                  {
+                    type: "mrkdwn",
+                    text: `*Service:* ${context.repo.repo}`
+                  },
+                  {
+                    type: "mrkdwn",
+                    text: `*Started by:* ${context.actor}`
+                  },
+                  {
+                    type: "mrkdwn",
+                    text: `*Environment:* ${process.env.ENV_NAME}`
+                  }
+                ],
+                accessory: {
+                  type: "button",
+                  action_id: "visit_workflow_url",
+                  text: {
+                    type: "plain_text",
+                    text: ":github: watch",
+                    emoji: true
+                  },
+                  url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+                }
+              }
+            ]
+          }
+
+          if (data.headOnlyPullRequests.length > 0) {
+            slackPayload.blocks.push({
+              type: "section",
+              text: {
+                type: "mrkdwn",
+                text: "*Deployed Pull Requests:*"
+              },
+              fields: data.headOnlyPullRequests.map(({number, title, url}) => ({
+                type: "mrkdwn",
+                text: `<${url}|#${number} ${title}>`
+              }))
+            })
+          }
+
+          if (data.baseOnlyPullRequests.length > 0) {
+            slackPayload.blocks.push({
+              type: "section",
+              text: {
+                type: "mrkdwn",
+                text: "*Rolled-back Pull Requests:*"
+              },
+              fields: data.baseOnlyPullRequests.map(({number, title, url}) => ({
+                type: "mrkdwn",
+                text: `<${url}|#${number} ${title}>`
+              }))
+            })
+          }
+
+          core.setOutput('payload', slackPayload)
+
+    - name: Post to a Slack channel
+      id: slack
+      uses: slackapi/slack-github-action@v1.19.0
+      with:
+        channel-id: "#deployments"
+        payload: ${{ steps.prepare_payload.outputs.payload }}
+      env:
+        SLACK_BOT_TOKEN: ${{ inputs.slack_token }}
