@@ -82,11 +82,12 @@ jobs:
           SERVICE_NAME: ${{ inputs.service_name }}
           PROJECT_ID: ${{ steps.vars.outputs.project_id }}
           IMAGE_TAG: ${{ steps.vars.outputs.tag }}
+          SESSION_BUCKET: ${{ steps.vars.outputs.session_bucket_name }}
         run: |
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm dependency build
           helm upgrade --install --create-namespace tensorleap-$SERVICE_NAME . -n tensorleap \
-            --set-string commit_sha=$GITHUB_SHA,env_name=$ENV_NAME,project_id=$PROJECT_ID,image_tag=$IMAGE_TAG \
+            --set-string commit_sha=$GITHUB_SHA,env_name=$ENV_NAME,project_id=$PROJECT_ID,image_tag=$IMAGE_TAG,session_bucket=$SESSION_BUCKET \
             --wait
       - name: Send Slack notification (deploy finished)
         if: ${{ always() }}
