@@ -90,7 +90,7 @@ jobs:
             --wait
       - name: Send Slack notification (deploy finished)
         if: ${{ always() }}
-        uses: tensorleap/reusable-workflows/actions/slack-notify-deploymaster
+        uses: tensorleap/reusable-workflows/actions/slack-notify-deploy@master
         with:
           commit_data: ${{ steps.commit_data.outputs.result }}
           env: ${{ inputs.env_name }}
