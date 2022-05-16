@@ -62,6 +62,10 @@ runs:
                   {
                     type: "mrkdwn",
                     text: `*Environment:* ${process.env.ENV_NAME}`
+                  },
+                  {
+                    type: "mrkdwn",
+                    text: `*Branch:* ${process.env.GITHUB_REF_NAME}`
                   }
                 ],
                 accessory: {
