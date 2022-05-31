@@ -87,9 +87,9 @@ runs:
               type: "section",
               text: {
                 type: "mrkdwn",
-                text: "*Deployed Pull Requests:*"
+                text: `*Deployed Pull Requests:* ${data.headOnlyPullRequests.length > 10 ? '(Top 10)' : ''}`
               },
-              fields: data.headOnlyPullRequests.map(({number, title, url}) => ({
+              fields: data.headOnlyPullRequests.slice(0, 10).map(({number, title, url}) => ({
                 type: "mrkdwn",
                 text: `<${url}|#${number} ${title}>`
               }))
@@ -101,9 +101,9 @@ runs:
               type: "section",
               text: {
                 type: "mrkdwn",
-                text: "*Rolled-back Pull Requests:*"
+                text: `*Rolled-back Pull Requests:* ${data.baseOnlyPullRequests.length > 10 ? '(Top 10)' : ''}`
               },
-              fields: data.baseOnlyPullRequests.map(({number, title, url}) => ({
+              fields: data.baseOnlyPullRequests.slice(0, 10).map(({number, title, url}) => ({
                 type: "mrkdwn",
                 text: `<${url}|#${number} ${title}>`
               }))
