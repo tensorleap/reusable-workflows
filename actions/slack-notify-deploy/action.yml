@@ -89,7 +89,7 @@ runs:
                 type: "mrkdwn",
                 text: "*Deployed Pull Requests:*"
               },
-              fields: data.headOnlyPullRequests.map(({number, title, url}) => ({
+              fields: data.headOnlyPullRequests.slice(0, 10).map(({number, title, url}) => ({
                 type: "mrkdwn",
                 text: `<${url}|#${number} ${title}>`
               }))
