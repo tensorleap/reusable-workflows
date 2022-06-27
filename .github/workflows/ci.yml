@@ -106,19 +106,6 @@ jobs:
             -e AUTH_SECRET \
             gcr.io/$GITHUB_REPOSITORY:$TAG \
             $CMD
-      - name: Copy diff image files
-        if: failure()
-        run: |
-          mkdir -p ${{ github.workspace }}/__image_snapshots__/__diff_output__/
-          docker cp ${{ github.sha }}:/app/__image_snapshots__/__diff_output__/ ${{ github.workspace }}/__image_snapshots__/__diff_output__/
-      - name: Upload diff image files
-        if: failure()
-        uses: actions/upload-artifact@v3
-        with:
-          retention-days: 1
-          name: diff_output
-          path: ${{ github.workspace }}/__image_snapshots__/__diff_output__/*
-          if-no-files-found: error
 
   mark-stable:
     needs: [lint, test]
