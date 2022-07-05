@@ -34,7 +34,7 @@ runs:
       with:
         script: |
           core.exportVariable('IMAGE_NAME', `gcr.io/${context.repo.owner}/${context.repo.repo}`);
-          const imageTag = `${process.env.GITHUB_REF_NAME}-${context.sha.substring(0, 7)}`;
+          const imageTag = `${process.env.GITHUB_REF_NAME}-${context.sha.substring(0, 8)}`;
           core.exportVariable('IMAGE_TAG', imageTag);
           core.exportVariable('IMAGE_TAG_BUILDER', `${imageTag}-builder`);
           core.exportVariable('IMAGE_TAG_STABLE', `${imageTag}-stable`);
