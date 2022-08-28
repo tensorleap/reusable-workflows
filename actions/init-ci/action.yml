@@ -4,7 +4,10 @@ description: Sets up common environment for CI jobs
 inputs:
   buildx:
     required: false
-    description: Enable buildx system (needed just to enable some docker build-push-action features)
+    description: Bootstrap buildx builder in a docker container (needed just to enable some docker build-push-action features)
+  buildx-arm:
+    required: false
+    description: Bootstrap buildx builder in a self hoster cluster on an arm node (for building docker images on arm64 machine)
   gcp_service_account:
     required: false
     description: Login to gcloud and gcr with this service account (needed in order to push images and run gcloud)
@@ -14,7 +17,7 @@ runs:
   steps:
     - name: Checkout
       uses: actions/checkout@v3
-    - name: Set up Docker Buildx
+    - name: Bootstrap Buildx builder
       uses: docker/setup-buildx-action@v2
       if: ${{ inputs.buildx }}
     - name: Authenticate to Google Cloud
@@ -29,6 +32,19 @@ runs:
       if: ${{ inputs.gcp_service_account }}
       shell: bash
       run: gcloud auth configure-docker
+    - name: Bootstrap buildx builders
+      if: ${{ inputs.gcp_service_account && inputs.buildx-arm }}
+      shell: bash
+      run: |
+        gcloud container clusters get-credentials --zone=us-central1-a --project=tensorleap-ops3 github-actions
+        echo 'If the next command fails during bootrap, a tolaration must be added manually'
+        docker buildx create \
+          --bootstrap \
+          --name=arm64 \
+          --node=buildkit-arm64 \
+          --driver=kubernetes \
+          --driver-opt='nodeselector=kubernetes.io/arch=arm64' \
+          --use
     - name: Generate build variables
       uses: actions/github-script@v6
       with:
