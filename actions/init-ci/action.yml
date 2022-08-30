@@ -10,7 +10,7 @@ inputs:
     description: Bootstrap buildx builder in a self hoster cluster on an arm node (for building docker images on arm64 machine)
   gcp_service_account:
     required: false
-    description: Login to gcloud and gcr with this service account (needed in order to push images and run gcloud)
+    description: Login to gcloud with this service account (needed in order to push images and run gcloud)
 
 runs:
   using: "composite"
@@ -31,7 +31,7 @@ runs:
     - name: Configure docker
       if: ${{ inputs.gcp_service_account }}
       shell: bash
-      run: gcloud auth configure-docker
+      run: gcloud auth configure-docker us-central1-docker.pkg.dev
     - name: Bootstrap buildx builders
       if: ${{ inputs.gcp_service_account && inputs.buildx-arm }}
       shell: bash
@@ -49,7 +49,9 @@ runs:
       uses: actions/github-script@v6
       with:
         script: |
-          core.exportVariable('IMAGE_NAME', `gcr.io/${context.repo.owner}/${context.repo.repo}`);
+          const dockerRegistry = 'us-central1-docker.pkg.dev/tensorleap/main';
+          core.exportVariable('DOCKER_REGISTRY', dockerRegistry);
+          core.exportVariable('IMAGE_NAME', `${dockerRegistry}/${context.repo.repo}`);
           const imageTag = `${process.env.GITHUB_REF_NAME}-${context.sha.substring(0, 8)}`;
           core.exportVariable('IMAGE_TAG', imageTag);
           core.exportVariable('IMAGE_TAG_BUILDER', `${imageTag}-builder`);
