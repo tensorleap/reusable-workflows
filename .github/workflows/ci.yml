@@ -15,6 +15,9 @@ on:
       npm_token:
         required: false
 
+env:
+  DOCKER_REGISTRY: us-central1-docker.pkg.dev/tensorleap/main
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -39,7 +42,7 @@ jobs:
       - name: Build docker image
         uses: docker/build-push-action@v2
         with:
-          tags: gcr.io/${{ github.repository }}:${{steps.vars.outputs.tag}}
+          tags: ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}:${{steps.vars.outputs.tag}}
           build-args: |
             NPM_TOKEN=${{ secrets.npm_token }}
           labels: |
@@ -71,7 +74,7 @@ jobs:
           TAG: ${{ steps.vars.outputs.tag }}
           CMD: ${{ inputs.lint_cmd }}
         run: |
-          docker run -e CI=true gcr.io/$GITHUB_REPOSITORY:$TAG $CMD
+          docker run -e CI=true $DOCKER_REGISTRY/$GITHUB_REPOSITORY:$TAG $CMD
 
   test:
     needs: build
@@ -104,7 +107,7 @@ jobs:
             -e GOOGLE_APPLICATION_CREDENTIALS \
             -e CI=true \
             -e AUTH_SECRET \
-            gcr.io/$GITHUB_REPOSITORY:$TAG \
+            $DOCKER_REGISTRY/$GITHUB_REPOSITORY:$TAG \
             $CMD
 
   mark-stable:
@@ -124,4 +127,7 @@ jobs:
         env:
           TAG: ${{ steps.vars.outputs.tag }}
         run: |
-          gcloud container images add-tag gcr.io/$GITHUB_REPOSITORY:$TAG gcr.io/$GITHUB_REPOSITORY:$TAG-stable gcr.io/$GITHUB_REPOSITORY:latest
+          gcloud container images add-tag \
+            $DOCKER_REGISTRY/$GITHUB_REPOSITORY:$TAG \
+            $DOCKER_REGISTRY/$GITHUB_REPOSITORY:$TAG-stable \
+            $DOCKER_REGISTRY/$GITHUB_REPOSITORY:latest
