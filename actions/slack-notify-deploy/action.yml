@@ -114,7 +114,7 @@ runs:
 
     - name: Post to a Slack channel
       id: slack
-      uses: slackapi/slack-github-action@v1.19.0
+      uses: slackapi/slack-github-action@v1
       with:
         channel-id: "#deployments"
         payload: ${{ steps.prepare_payload.outputs.payload }}
