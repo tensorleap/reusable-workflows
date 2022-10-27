@@ -11,6 +11,9 @@ inputs:
   gcp_service_account:
     required: false
     description: Login to gcloud with this service account (needed in order to push images and run gcloud)
+  create_gcp_credentials_file:
+    required: false
+    description: Create a gcp service account json file and set GOOGLE_APPLICATION_CREDENTIALS
 
 runs:
   using: "composite"
@@ -25,6 +28,8 @@ runs:
       uses: google-github-actions/auth@v0
       with:
         credentials_json: ${{ inputs.gcp_service_account }}
+        create_credentials_file: ${{ inputs.create_gcp_credentials_file }}
+        export_environment_variables: true
     - name: Set up GCloud SDK
       if: ${{ inputs.gcp_service_account }}
       uses: google-github-actions/setup-gcloud@v0
