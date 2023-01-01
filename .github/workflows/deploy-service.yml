@@ -50,10 +50,11 @@ jobs:
           echo "::set-output name=tag::$GITHUB_REF_NAME-$(echo $GITHUB_SHA | cut -c 1-8)$(test "$UNSTABLE" == true && echo '' || echo '-stable')"
           terraform output -json -state=<(gsutil cp gs://tensorleap-infra-nonprod/clusters/$ENV_NAME.tfstate -) | jq -r 'map_values(.value) | to_entries | .[] | "::set-output name=\(.key)::\(.value)"'
       - name: Get cluster credentials
-        env:
-          PROJECT_ID: ${{ steps.vars.outputs.project_id }}
-          ZONE: ${{ steps.vars.outputs.location }}
-        run: gcloud container clusters get-credentials --project=$PROJECT_ID --zone=$ZONE tensorleap
+        uses: google-github-actions/get-gke-credentials@v1
+        with:
+          cluster_name: tensorleap
+          project_id: ${{ steps.vars.outputs.project_id }}
+          location: ${{ steps.vars.outputs.location }}
       - name: Get deployed commit
         id: deployed_commit
         env:
