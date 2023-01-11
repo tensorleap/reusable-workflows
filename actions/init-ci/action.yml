@@ -36,6 +36,9 @@ runs:
       if: ${{ inputs.gcp_service_account && inputs.buildx-arm }}
       shell: bash
       run: |
+        export USE_GKE_GCLOUD_AUTH_PLUGIN=true
+        gcloud components install gke-gcloud-auth-plugin
+        gcloud components update
         gcloud container clusters get-credentials --zone=us-central1-a --project=tensorleap-ops3 github-actions
         echo 'If the next command fails during bootrap, a tolaration must be added manually'
         docker buildx create \
