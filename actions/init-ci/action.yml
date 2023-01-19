@@ -55,7 +55,9 @@ runs:
           const dockerRegistry = 'us-central1-docker.pkg.dev/tensorleap/main';
           core.exportVariable('DOCKER_REGISTRY', dockerRegistry);
           core.exportVariable('IMAGE_NAME', `${dockerRegistry}/${context.repo.repo}`);
-          const imageTag = `${process.env.GITHUB_REF_NAME}-${context.sha.substring(0, 8)}`;
+          const refName = process.env.GITHUB_REF_NAME;
+          const lastRefNamePart = refName.substring(refName.lastIndexOf('/') + 1); // This handles dependabot branches
+          const imageTag = `${lastRefNamePart}-${context.sha.substring(0, 8)}`;
           core.exportVariable('IMAGE_TAG', imageTag);
           core.exportVariable('IMAGE_TAG_BUILDER', `${imageTag}-builder`);
           core.exportVariable('IMAGE_TAG_STABLE', `${imageTag}-stable`);
