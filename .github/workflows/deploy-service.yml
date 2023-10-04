@@ -92,9 +92,10 @@ jobs:
           helm repo update
           helm dependency update
           helm dependency build
+
           helm upgrade --install --create-namespace tensorleap-$SERVICE_NAME . -n tensorleap \
             --set-string commit_sha=$GITHUB_SHA,env_name=$ENV_NAME,project_id=$PROJECT_ID,image_tag=$IMAGE_TAG,session_bucket=$SESSION_BUCKET \
-            --wait
+            --wait || (kubectl -n tensorleap get events --sort-by='{.lastTimestamp}' ||  exit 1)
       - name: Send Slack notification (deploy finished)
         if: ${{ always() }}
         uses: tensorleap/reusable-workflows/actions/slack-notify-deploy@master
