@@ -89,6 +89,8 @@ jobs:
           SESSION_BUCKET: ${{ steps.vars.outputs.session_bucket_name }}
         run: |
           helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo update
+          helm dependency update
           helm dependency build
           helm upgrade --install --create-namespace tensorleap-$SERVICE_NAME . -n tensorleap \
             --set-string commit_sha=$GITHUB_SHA,env_name=$ENV_NAME,project_id=$PROJECT_ID,image_tag=$IMAGE_TAG,session_bucket=$SESSION_BUCKET \
