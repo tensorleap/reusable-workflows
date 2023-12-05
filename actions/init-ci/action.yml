@@ -22,9 +22,9 @@ runs:
       if: ${{ inputs.buildx }}
     
     - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v2
+      uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: arn:aws:iam::170591776583:role/TerraformAdmin
+        role-to-assume: arn:aws:iam::898022457080:role/TerraformAdmin
         aws-region: us-east-1
     
     # - name: Set up GCloud SDK
@@ -54,7 +54,7 @@ runs:
       uses: actions/github-script@v6
       with:
         script: |
-          const dockerRegistry = 'us-central1-docker.pkg.dev/tensorleap/main';
+          const dockerRegistry = '898022457080.dkr.ecr.us-east-1.amazonaws.com';
           core.exportVariable('DOCKER_REGISTRY', dockerRegistry);
           core.exportVariable('IMAGE_NAME', `${dockerRegistry}/${context.repo.repo}`);
           const refName = process.env.GITHUB_REF_NAME;
