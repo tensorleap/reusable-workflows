@@ -63,3 +63,4 @@ runs:
           core.exportVariable('IMAGE_TAG', imageTag);
           core.exportVariable('IMAGE_TAG_BUILDER', `${imageTag}-builder`);
           core.exportVariable('IMAGE_TAG_STABLE', `${imageTag}-stable`);
+          core.exportVariable('REPOSITORY', `${context.repo.repo}`);
