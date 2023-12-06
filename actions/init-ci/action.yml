@@ -51,7 +51,7 @@ runs:
       uses: actions/github-script@v6
       with:
         script: |
-          const dockerRegistry = '${{ inputs.aws_account }}.dkr.ecr.${{ inputs.region }}.amazonaws.com';
+          const dockerRegistry = '${{ inputs.aws_account }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com';
           core.exportVariable('DOCKER_REGISTRY', dockerRegistry);
           core.exportVariable('IMAGE_NAME', `${dockerRegistry}/${context.repo.repo}`);
           const refName = process.env.GITHUB_REF_NAME;
