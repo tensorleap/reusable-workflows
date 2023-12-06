@@ -8,9 +8,13 @@ inputs:
   buildx-arm:
     required: false
     description: Bootstrap buildx builder in a self hoster cluster on an arm node (for building docker images on arm64 machine)
-  gcp_service_account:
+  aws_account:
+    required: true
+    description: The account to which Images will be pushed to
+  aws_region:
     required: false
-    description: Login to gcloud with this service account (needed in order to push images and run gcloud)
+    default: 'us-east-1'
+    description: The account to which Images will be pushed to
 
 runs:
   using: "composite"
@@ -24,16 +28,9 @@ runs:
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: arn:aws:iam::898022457080:role/TerraformAdmin
+        role-to-assume: arn:aws:iam::${{ inputs.aws_account }}:role/TerraformAdmin
         aws-region: us-east-1
     
-    # - name: Set up GCloud SDK
-    #   if: ${{ inputs.gcp_service_account }}
-    #   uses: google-github-actions/setup-gcloud@v1
-    # - name: Configure docker
-    #   if: ${{ inputs.gcp_service_account }}
-    #   shell: bash
-    #   run: gcloud auth configure-docker us-central1-docker.pkg.dev
     - name: Bootstrap buildx builders
       if: ${{ inputs.gcp_service_account && inputs.buildx-arm }}
       shell: bash
@@ -54,7 +51,7 @@ runs:
       uses: actions/github-script@v6
       with:
         script: |
-          const dockerRegistry = '898022457080.dkr.ecr.us-east-1.amazonaws.com';
+          const dockerRegistry = '${{ inputs.aws_account }}.dkr.ecr.${{ inputs.region }.amazonaws.com';
           core.exportVariable('DOCKER_REGISTRY', dockerRegistry);
           core.exportVariable('IMAGE_NAME', `${dockerRegistry}/${context.repo.repo}`);
           const refName = process.env.GITHUB_REF_NAME;
