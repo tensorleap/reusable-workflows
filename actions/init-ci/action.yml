@@ -28,11 +28,11 @@ runs:
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: arn:aws:iam::${{ inputs.aws_account }}:role/TerraformAdmin
+        role-to-assume: 'arn:aws:iam::${{ inputs.aws_account }}:role/TerraformAdmin'
         aws-region: us-east-1
     
     - name: Bootstrap buildx builders
-      if: ${{ inputs.gcp_service_account && inputs.buildx-arm }}
+      if: ${{ inputs.buildx-arm }}
       shell: bash
       run: |
         # export USE_GKE_GCLOUD_AUTH_PLUGIN=true
