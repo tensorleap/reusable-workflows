@@ -1,0 +1,42 @@
+on:
+  workflow_call:
+    secrets:
+      gitops_repo_key:
+        description: 'SSH key for GitOps repo'
+        required: true
+      twingate_key:
+        description: 'Twingate service key'
+        required: true
+
+jobs:
+  terraform-init:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        repository: 'tensorleap/aws-env'
+        ref: 'master'
+  
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: arn:aws:iam::170591776583:role/TerraformAdmin
+        aws-region: us-east-1
+
+    - name: Checkout GitOps repo
+      uses: actions/checkout@v4
+      with:
+        repository: 'tensorleap/aws-git-ops'
+        path: 'gitops'
+        ref: 'directeam-init-commit'
+        ssh-key: ${{ secrets.GITOPS_REPO_KEY }}
+
+    - name: Setup Twingate Client
+      uses: twingate/github-action@v1
+      with:
+        # The Twingate Service Key used to connect Twingate to the proper service
+        # Learn more about [Twingate Services](https://docs.twingate.com/docs/services)
+        #
+        # Required
+        service-key: ${{ secrets.TWINGATE_KEY }}
