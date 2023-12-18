@@ -1,6 +1,7 @@
+name: Terraform Init
 on:
   workflow_call:
-    secrets:
+    inputs:
       gitops_repo_key:
         description: 'SSH key for GitOps repo'
         required: true
@@ -8,7 +9,8 @@ on:
         description: 'Twingate service key'
         required: true
 
-jobs:
+runs:
+  using: "composite"
   terraform-init:
     runs-on: ubuntu-latest
     steps:
