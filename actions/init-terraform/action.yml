@@ -1,19 +1,16 @@
 name: Terraform Init
-on:
-  workflow_call:
-    inputs:
-      gitops_repo_key:
-        description: 'SSH key for GitOps repo'
-        required: true
-      twingate_key:
-        description: 'Twingate service key'
-        required: true
+description: 'Initialize Terraform' 
+inputs:
+  gitops_repo_key:
+    description: 'SSH key for GitOps repo'
+    required: true
+  twingate_key:
+    description: 'Twingate service key'
+    required: true
 
 runs:
   using: "composite"
-  terraform-init:
-    runs-on: ubuntu-latest
-    steps:
+  steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
