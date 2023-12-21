@@ -29,7 +29,7 @@ runs:
         repository: 'tensorleap/aws-git-ops'
         path: 'gitops'
         ref: 'directeam-init-commit'
-        ssh-key: ${{ secrets.GITOPS_REPO_KEY }}
+        ssh-key: ${{ inputs.GITOPS_REPO_KEY }}
 
     - name: Setup Twingate Client
       uses: twingate/github-action@v1
@@ -38,4 +38,4 @@ runs:
         # Learn more about [Twingate Services](https://docs.twingate.com/docs/services)
         #
         # Required
-        service-key: ${{ secrets.TWINGATE_KEY }}
+        service-key: ${{ inputs.TWINGATE_KEY }}
