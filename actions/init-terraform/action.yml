@@ -7,7 +7,7 @@ inputs:
   twingate_key:
     description: 'Twingate service key'
     required: true
-  aws_env_repo_key:
+  aws_env_secret:
     description: 'SSH key for aws-env repo'
     required: false
 
@@ -19,7 +19,7 @@ runs:
       with:
         repository: 'tensorleap/aws-env'
         ref: 'master'
-        key: ${{ inputs.AWS_ENV_REPO_KEY }}
+        key: ${{ inputs.AWS_ENV_SECRET }}
   
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v2
