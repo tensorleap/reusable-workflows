@@ -22,7 +22,7 @@ runs:
         ssh-key: ${{ inputs.AWS_ENV_SECRET }}
   
     - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v2
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: arn:aws:iam::170591776583:role/TerraformAdmin
         aws-region: us-east-1
