@@ -30,6 +30,11 @@ runs:
       with:
         role-to-assume: 'arn:aws:iam::${{ inputs.aws_account }}:role/TerraformAdmin'
         aws-region: us-east-1
+
+    - name: Login to Amazon ECR
+      if: ${{ inputs.buildx }}
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
     
     - name: Bootstrap buildx builders
       if: ${{ inputs.buildx-arm }}
