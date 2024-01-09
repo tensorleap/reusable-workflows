@@ -1,6 +1,9 @@
 name: Terraform Init
 description: 'Initialize Terraform' 
 inputs:
+  deploy_to_env: 
+    description: 'Environment to deploy to'
+    required: true
   gitops_repo_key:
     description: 'SSH key for GitOps repo'
     required: true
@@ -30,7 +33,7 @@ runs:
     - name: Checkout GitOps repo
       uses: actions/checkout@v4
       with:
-        repository: 'tensorleap/aws-git-ops'
+        repository: 'tensorleap/aws-git-ops-${{ inputs.deploy_to_env }}'
         path: 'gitops'
         ref: 'directeam-init-commit'
         ssh-key: ${{ inputs.GITOPS_REPO_KEY }}
