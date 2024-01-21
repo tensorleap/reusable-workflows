@@ -3,7 +3,8 @@ description: 'Initialize Terraform'
 inputs:
   deploy_to_env: 
     description: 'Environment to deploy to'
-    required: true
+    required: false
+    default: "dev"
   gitops_repo_key:
     description: 'SSH key for GitOps repo'
     required: true
