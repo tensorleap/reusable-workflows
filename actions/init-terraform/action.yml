@@ -36,7 +36,7 @@ runs:
       with:
         repository: 'tensorleap/aws-git-ops-${{ inputs.deploy_to_env }}'
         path: 'gitops'
-        ref: 'directeam-init-commit'
+        ref: 'master'
         ssh-key: ${{ inputs.GITOPS_REPO_KEY }}
 
     - name: Setup Twingate Client
