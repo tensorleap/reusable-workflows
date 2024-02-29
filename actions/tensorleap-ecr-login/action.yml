@@ -1,0 +1,42 @@
+name: Login to ECR
+description: Logins to all ECR repos
+inputs:
+  aws_region:
+    required: false
+    default: 'us-east-1'
+    description: The account to which Images will be pushed to
+
+# Accounts list: [898022457080, 848399905383, 633875197750]
+
+runs:
+  using: "composite"
+  steps: 
+    - name: Configure AWS Credentials - dev
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: 'arn:aws:iam::898022457080:role/TerraformAdmin'
+        aws-region: us-east-1
+
+    - name: Login to Amazon ECR - dev
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Configure AWS Credentials - stage
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: 'arn:aws:iam::848399905383:role/TerraformAdmin'
+        aws-region: us-east-1
+
+    - name: Login to Amazon ECR - stage
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Configure AWS Credentials - prod
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: 'arn:aws:iam::633875197750:role/TerraformAdmin'
+        aws-region: us-east-1
+
+    - name: Login to Amazon ECR - prod
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
