@@ -18,7 +18,6 @@ runs:
         aws-region: us-east-1
 
     - name: Login to Amazon ECR - dev
-      id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
 
     - name: Configure AWS Credentials - stage
@@ -28,7 +27,6 @@ runs:
         aws-region: us-east-1
 
     - name: Login to Amazon ECR - stage
-      id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
 
     - name: Configure AWS Credentials - prod
@@ -38,5 +36,4 @@ runs:
         aws-region: us-east-1
 
     - name: Login to Amazon ECR - prod
-      id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
