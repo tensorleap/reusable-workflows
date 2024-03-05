@@ -57,7 +57,9 @@ runs:
           core.exportVariable('TENSORFLOW_IMAGE_NAME', `${dockerRegistry}/tensorflow`);
           const refName = process.env.GITHUB_REF_NAME;
           const lastRefNamePart = refName.substring(refName.lastIndexOf('/') + 1); // This handles dependabot branches
-          const imageTag = `${lastRefNamePart}-${context.sha.substring(0, 8)}`;
+          const githubShortSha = context.sha.substring(0, 8);
+          const imageTag = `${lastRefNamePart}-${githubShortSha}`;
+          core.exportVariable('GITHUB_SHORT_SHA', githubShortSha);
           core.exportVariable('IMAGE_TAG', imageTag);
           core.exportVariable('IMAGE_TAG_BUILDER', `${imageTag}-builder`);
           core.exportVariable('IMAGE_TAG_STABLE', `${imageTag}-stable`);
