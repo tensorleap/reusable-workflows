@@ -1,0 +1,49 @@
+name: Terraform Init
+description: 'Initialize Terraform' 
+inputs:
+  deploy_to_env: 
+    description: 'Environment to deploy to'
+    required: false
+    default: "dev"
+  gitops_repo_key:
+    description: 'SSH key for GitOps repo'
+    required: true
+  twingate_key:
+    description: 'Twingate service key'
+    required: true
+  aws_env_secret:
+    description: 'SSH key for aws-env repo'
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        repository: 'tensorleap/aws-env'
+        # ref: 'master'
+        ssh-key: ${{ inputs.AWS_ENV_SECRET }}
+  
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::170591776583:role/TerraformAdmin
+        aws-region: us-east-1
+
+    - name: Checkout GitOps repo
+      uses: actions/checkout@v4
+      with:
+        repository: 'tensorleap/aws-git-ops-${{ inputs.deploy_to_env }}'
+        path: 'gitops'
+        ref: 'master'
+        ssh-key: ${{ inputs.GITOPS_REPO_KEY }}
+
+    - name: Setup Twingate Client
+      uses: twingate/github-action@v1
+      with:
+        # The Twingate Service Key used to connect Twingate to the proper service
+        # Learn more about [Twingate Services](https://docs.twingate.com/docs/services)
+        #
+        # Required
+        service-key: ${{ inputs.TWINGATE_KEY }}

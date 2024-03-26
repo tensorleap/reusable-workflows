@@ -8,56 +8,59 @@ inputs:
   buildx-arm:
     required: false
     description: Bootstrap buildx builder in a self hoster cluster on an arm node (for building docker images on arm64 machine)
-  gcp_service_account:
+  aws_account:
+    required: true
+    description: The account to which Images will be pushed to
+  aws_region:
     required: false
-    description: Login to gcloud with this service account (needed in order to push images and run gcloud)
+    default: 'us-east-1'
+    description: The account to which Images will be pushed to
 
 runs:
   using: "composite"
   steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4.1.1
     - name: Bootstrap Buildx builder
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3.0.0
       if: ${{ inputs.buildx }}
-    - name: Authenticate to Google Cloud
-      if: ${{ inputs.gcp_service_account }}
-      uses: google-github-actions/auth@v1
+    
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
       with:
-        credentials_json: ${{ inputs.gcp_service_account }}
-    - name: Set up GCloud SDK
-      if: ${{ inputs.gcp_service_account }}
-      uses: google-github-actions/setup-gcloud@v1
-    - name: Configure docker
-      if: ${{ inputs.gcp_service_account }}
-      shell: bash
-      run: gcloud auth configure-docker us-central1-docker.pkg.dev
-    - name: Bootstrap buildx builders
-      if: ${{ inputs.gcp_service_account && inputs.buildx-arm }}
-      shell: bash
-      run: |
-        export USE_GKE_GCLOUD_AUTH_PLUGIN=true
-        gcloud components install gke-gcloud-auth-plugin
-        gcloud components update
-        gcloud container clusters get-credentials --zone=us-central1-a --project=tensorleap-ops3 github-actions
-        echo 'If the next command fails during bootrap, a tolaration must be added manually'
-        docker buildx create \
-          --bootstrap \
-          --name=arm64 \
-          --node=buildkit-arm64 \
-          --driver=kubernetes \
-          --driver-opt='nodeselector=kubernetes.io/arch=arm64' \
-          --use
+        role-to-assume: 'arn:aws:iam::${{ inputs.aws_account }}:role/TerraformAdmin'
+        aws-region: us-east-1
+
+    - name: Login to Amazon ECR
+      if: ${{ inputs.buildx }}
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+    
+    # - name: Bootstrap buildx builders
+    #   if: ${{ inputs.buildx-arm }}
+    #   shell: bash
+    #   run: |
+    #     echo 'If the next command fails during bootrap, a tolaration must be added manually'
+    #     docker buildx create \
+    #       --bootstrap \
+    #       --name=arm64 \
+    #       --node=buildkit-arm64 \
+    #       --driver=kubernetes \
+    #       --use
     - name: Generate build variables
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7.0.1
       with:
         script: |
-          const dockerRegistry = 'us-central1-docker.pkg.dev/tensorleap/main';
+          const dockerRegistry = '${{ inputs.aws_account }}.dkr.ecr.${{ inputs.aws_region }}.amazonaws.com';
           core.exportVariable('DOCKER_REGISTRY', dockerRegistry);
           core.exportVariable('IMAGE_NAME', `${dockerRegistry}/${context.repo.repo}`);
+          core.exportVariable('TENSORFLOW_IMAGE_NAME', `${dockerRegistry}/tensorflow`);
           const refName = process.env.GITHUB_REF_NAME;
           const lastRefNamePart = refName.substring(refName.lastIndexOf('/') + 1); // This handles dependabot branches
-          const imageTag = `${lastRefNamePart}-${context.sha.substring(0, 8)}`;
+          const githubShortSha = context.sha.substring(0, 8);
+          const imageTag = `${lastRefNamePart}-${githubShortSha}`;
+          core.exportVariable('GITHUB_SHORT_SHA', githubShortSha);
           core.exportVariable('IMAGE_TAG', imageTag);
           core.exportVariable('IMAGE_TAG_BUILDER', `${imageTag}-builder`);
           core.exportVariable('IMAGE_TAG_STABLE', `${imageTag}-stable`);
+          core.exportVariable('REPOSITORY', `${context.repo.repo}`);
