@@ -1,0 +1,23 @@
+name: 'Helm Chart Validator'
+description: 'A GitHub Action to validate Helm charts'
+inputs:
+  chart_path:
+    description: 'Path to the Helm chart'
+    required: false
+    default: 'helm-chart'
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Install Helm
+      shell: bash
+      run: |
+        curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+    - name: Validate Helm chart
+      shell: bash
+      run: |
+        helm lint ${{ inputs.chart_path }}
+        helm template ${{ inputs.chart_path }} --dry-run
