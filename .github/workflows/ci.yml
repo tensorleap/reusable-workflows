@@ -9,6 +9,14 @@ on:
       test_cmd:
         required: true
         type: string
+      validate_helm_chart:
+        required: false
+        type: boolean
+        default: false
+      helm_chart_path:
+        required: false
+        type: string
+        default: 'helm-chart'
     secrets:
       gcp_service_account:
         required: true
@@ -50,6 +58,11 @@ jobs:
           push: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Validate Helm chart
+        if: ${{ inputs.validate_helm_chart }}
+        run: |
+          helm lint ${{ inputs.helm_chart_path }}
+          helm template ${{ inputs.helm_chart_path }} --dry-run
 
   lint:
     needs: build
