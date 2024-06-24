@@ -22,7 +22,7 @@ runs:
   using: "composite"
   steps:
     - name: Prepare Slack message
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7.0.1
       id: prepare_payload
       env:
         COMMIT_DATA: ${{ inputs.commit_data }}
